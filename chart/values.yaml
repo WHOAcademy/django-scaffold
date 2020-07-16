@@ -14,7 +14,7 @@ route: true
 
 # Database
 database:
-  service_host: django-scaffold-db
+  service_host: django-scaffold-db-postgresql
   service_port: 5432
   name: neverendingblog
   user: bastian
