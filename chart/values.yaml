@@ -14,12 +14,13 @@ route: true
 
 # Database
 database:
-  service_host: neverending-db-postgresql
+  service_host: django-db-postgresql
   service_port: 5432
   name: neverendingblog
   user: bastian
   password: balthazar
 
 #Django
+#have to get this from vault etc. maybe
 secret_key: xxub4w!i2$*bb#s5r%od4qepb7i-2@pq+yvna-2sj5d!tc8#8f
 environment: dev
