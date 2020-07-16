@@ -5,7 +5,7 @@ pipeline {
 
     environment {
         // GLobal Vars
-        NAME = "learning-experience-platform"
+        NAME = "django-scaffold"
 
         // Config repo managed by ArgoCD details
         ARGOCD_CONFIG_REPO = "github.com/mabulgu/ubiquitous-journey.git"
@@ -117,7 +117,7 @@ pipeline {
             steps {
                 script {
                     env.VERSION = sh(returnStdout: true, script: "grep -oP \"(?<=version=')[^']*\" setup.py").trim()
-                    env.PACKAGE = "${APP_NAME}-${VERSION}.tar.gz"
+                    env.PACKAGE = "${NAME}-${VERSION}.tar.gz"
                     env.SECRET_KEY = 'xxub4w!i2$*bb#s5r%od4qepb7i-2@pq+yvna-2sj5d!tc8#8f' //TODO: get it from secret
                 }
                 sh 'printenv'
