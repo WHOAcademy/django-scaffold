@@ -1,0 +1,25 @@
+app_name: django-scaffold
+replicas: 1
+# build info not used atm
+build:
+  build_tag: latest
+  base_image: python-38:latest
+image_repository: image-registry.openshift-image-registry.svc:5000
+image_name: django-scaffold
+image_namespace:
+image_tag: latest
+
+# OCP route
+route: true
+
+# Database
+database:
+  service_host: neverending-db-postgresql
+  service_port: 5432
+  name: neverendingblog
+  user: bastian
+  password: balthazar
+
+#Django
+secret_key: xxub4w!i2$*bb#s5r%od4qepb7i-2@pq+yvna-2sj5d!tc8#8f
+environment: dev
