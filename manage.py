@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 """Django's command-line utility for administrative tasks."""
-import os
 import sys
 
-from site.preps import set_default_env, load_sample_data
+from django_site.preps import set_default_env
 
 
 def main():
