@@ -116,9 +116,7 @@ pipeline {
             }
             steps {
                 script {
-
-                    //TODO: get version here
-                    env.VERSION = "1.0"
+                    env.VERSION = sh(returnStdout: true, script: "grep -oP \"(?<=version=')[^']*\" setup.py").trim()
                     env.PACKAGE = "${APP_NAME}-${VERSION}.tar.gz"
                     env.SECRET_KEY = 'xxub4w!i2$*bb#s5r%od4qepb7i-2@pq+yvna-2sj5d!tc8#8f' //TODO: get it from secret
                 }
@@ -130,11 +128,13 @@ pipeline {
                 echo '### Running tests ###'
                 sh 'python manage.py test blog.tests --testrunner="django_site.testrunners.UnitTestRunner"'
 
-                /*echo '### Packaging App for Nexus ###'
+                echo '### Packaging App for Nexus ###'
                 sh '''
-                    tar -zcvf ${PACKAGE} dist Dockerfile nginx.conf
-                    curl -v -f -u ${NEXUS_CREDS} --upload-file ${PACKAGE} http://${SONATYPE_NEXUS_SERVICE_SERVICE_HOST}:${SONATYPE_NEXUS_SERVICE_SERVICE_PORT}/repository/${NEXUS_REPO_NAME}/${APP_NAME}/${PACKAGE}
-                '''*/
+                    python -m pip install --upgrade pip
+                    pip install setuptools wheel
+                    python setup.py sdist bdist_wheel
+                    curl -v -f -u ${NEXUS_CREDS} --upload-file dist/${PACKAGE} http://${SONATYPE_NEXUS_SERVICE_SERVICE_HOST}:${SONATYPE_NEXUS_SERVICE_SERVICE_PORT}/repository/${NEXUS_REPO_NAME}/${APP_NAME}/${PACKAGE}
+                '''
             }
             // Post can be used both on individual stages and for the entire build.
             /*post {
