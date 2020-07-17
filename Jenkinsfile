@@ -157,7 +157,7 @@ pipeline {
             }*/
         }
 
-      stage("Bake (OpenShift Build)") {
+      /*stage("Bake (OpenShift Build)") {
 
       }
 
