@@ -118,7 +118,6 @@ pipeline {
             }
             steps {
                 script {
-                    plugin()
                     env.VERSION = sh(returnStdout: true, script: "grep -oP \"(?<=version=')[^']*\" setup.py").trim()
                     env.PACKAGE = "${NAME}-${VERSION}.tar.gz"
                     env.SECRET_KEY = 'xxub4w!i2$*bb#s5r%od4qepb7i-2@pq+yvna-2sj5d!tc8#8f' //TODO: get it from secret
@@ -157,10 +156,22 @@ pipeline {
             }*/
         }
 
-      /*stage("Bake (OpenShift Build)") {
-
+      stage("Bake (OpenShift Build)") {
+            options {
+                skipDefaultCheckout(true)
+            }
+            agent {
+                node {
+                    label "master"
+                }
+            }
+            steps {
+                openshift {
+                    OpenShift.sayHello(this)
+                }
+            }
       }
-
+/*
         stage("Helm Package App (master)") {
 
         }
