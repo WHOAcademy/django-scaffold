@@ -80,7 +80,6 @@ pipeline {
                     }
                     steps {
                         script {
-                            OpenShift.sayHello(this)
                             env.APP_ENV = "dev"
                             // Sandbox registry deets
                             env.IMAGE_REPOSITORY = 'image-registry.openshift-image-registry.svc:5000'
@@ -171,8 +170,32 @@ pipeline {
             }
             steps {
                 script {
-                    Openshift.sayHello(this)
+                    //OpenShift.buildAndTag(this, config, env.VERSION, commitId, baseImage, clusterName, environment)
                 }
+                sh 'printenv'
+
+                echo '### Get Binary from Nexus and shove it in a box ###'
+                sh  '''
+                    rm -rf package-contents*
+                    curl -v -f -u ${NEXUS_CREDS} http://${SONATYPE_NEXUS_SERVICE_SERVICE_HOST}:${SONATYPE_NEXUS_SERVICE_SERVICE_PORT}/repository/${NEXUS_REPO_NAME}/${APP_NAME}/${PACKAGE} -o ${PACKAGE}
+                    BUILD_ARGS=" --build-arg git_commit=${GIT_COMMIT} --build-arg git_url=${GIT_URL}  --build-arg build_url=${RUN_DISPLAY_URL} --build-arg build_tag=${BUILD_TAG}"
+                    echo ${BUILD_ARGS}
+
+                    # oc get bc ${APP_NAME} || rc=$?
+                    # dirty hack so i don't have to oc patch the bc for the new version when pushing to quay ...
+                    oc delete bc ${APP_NAME} || rc=$?
+                    if [[ $TARGET_NAMESPACE == *"dev"* ]]; then
+                        echo "🏗 Creating a sandbox build for inside the cluster 🏗"
+                        oc new-build --binary --name=${APP_NAME} -l app=${APP_NAME} ${BUILD_ARGS} --strategy=docker
+                        oc start-build ${APP_NAME} --from-archive=${PACKAGE} ${BUILD_ARGS} --follow
+                        # used for internal sandbox build ....
+                        oc tag ${OPENSHIFT_BUILD_NAMESPACE}/${APP_NAME}:latest ${TARGET_NAMESPACE}/${APP_NAME}:${VERSION}
+                    else
+                        echo "🏗 Creating a potential build that could go all the way so pushing externally 🏗"
+                        oc new-build --binary --name=${APP_NAME} -l app=${APP_NAME} ${BUILD_ARGS} --strategy=docker --push-secret=${QUAY_PUSH_SECRET} --to-docker --to="${IMAGE_REPOSITORY}/${TARGET_NAMESPACE}/${APP_NAME}:${VERSION}"
+                        oc start-build ${APP_NAME} --from-archive=${PACKAGE} ${BUILD_ARGS} --follow
+                    fi
+                '''
             }
       }
 /*
