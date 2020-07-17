@@ -1,3 +1,8 @@
+library "openshift-jenkins-shared-libraries"
+
+import platform.*
+import util.*
+
 pipeline {
     agent {
         label "master"
@@ -154,9 +159,9 @@ pipeline {
             }*/
         }
 
-      /*  stage("Bake (OpenShift Build)") {
+      stage("Bake (OpenShift Build)") {
 
-        }
+      }
 
         stage("Helm Package App (master)") {
 
