@@ -167,9 +167,7 @@ pipeline {
             }
             steps {
                 script {
-                    openshift {
-                        OpenShift.sayHello(this)
-                    }
+                    openshift.sayHello(this)
                 }
             }
       }
