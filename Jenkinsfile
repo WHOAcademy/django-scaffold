@@ -1,8 +1,5 @@
 @Library("openshift-jenkins-shared-libraries")
 
-import platform.*
-import util.*
-
 pipeline {
     agent {
         label "master"
