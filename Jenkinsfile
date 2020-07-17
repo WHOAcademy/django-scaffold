@@ -1,4 +1,4 @@
-@Library("openshift-jenkins-shared-libraries")
+@Library('openshift-jenkins-shared-libraries') _
 
 pipeline {
     agent {
