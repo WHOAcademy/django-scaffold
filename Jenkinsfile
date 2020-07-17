@@ -1,4 +1,4 @@
-library "openshift-jenkins-shared-libraries"
+@Library("openshift-jenkins-shared-libraries")
 
 import platform.*
 import util.*
