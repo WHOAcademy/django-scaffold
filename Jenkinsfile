@@ -1,4 +1,7 @@
-@Library('openshift-jenkins-shared-libraries') _
+@Library('openshift-jenkins-shared-libraries')
+
+import platform.*
+import util.*
 
 pipeline {
     agent {
@@ -167,7 +170,7 @@ pipeline {
             }
             steps {
                 script {
-                    openshift.sayHello(this)
+                    Openshift.sayHello(this)
                 }
             }
       }
