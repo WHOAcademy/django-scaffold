@@ -11,6 +11,7 @@ pipeline {
     environment {
         // GLobal Vars
         NAME = "django-scaffold"
+        PROJECT= "labs"
 
         // Config repo managed by ArgoCD details
         ARGOCD_CONFIG_REPO = "github.com/mabulgu/ubiquitous-journey.git"
@@ -62,7 +63,7 @@ pipeline {
                             env.IMAGE_REPOSITORY = "quay.io"
                             // app name for master is just learning-experience-platform or something
                             env.APP_NAME = "${NAME}".replace("/", "-").toLowerCase()
-                            env.TARGET_NAMESPACE = "${NAME}-" + env.APP_ENV
+                            env.TARGET_NAMESPACE = "${PROJECT}-" + env.APP_ENV
                         }
                     }
                 }
@@ -85,7 +86,7 @@ pipeline {
                             env.IMAGE_REPOSITORY = 'image-registry.openshift-image-registry.svc:5000'
                             // ammend the name to create 'sandbox' deploys based on current branch
                             env.APP_NAME = "${GIT_BRANCH}-${NAME}".replace("/", "-").toLowerCase()
-                            env.TARGET_NAMESPACE = "${NAME}-" + env.APP_ENV
+                            env.TARGET_NAMESPACE = "${PROJECT}-" + env.APP_ENV
                         }
                     }
                 }
@@ -106,7 +107,7 @@ pipeline {
                             env.APP_ENV = "dev"
                             env.IMAGE_REPOSITORY = 'image-registry.openshift-image-registry.svc:5000'
                             env.APP_NAME = "${GIT_BRANCH}-${NAME}".replace("/", "-").toLowerCase()
-                            env.TARGET_NAMESPACE = "${NAME}-" + env.APP_ENV
+                            env.TARGET_NAMESPACE = "${PROJECT}-" + env.APP_ENV
                         }
                     }
                 }
