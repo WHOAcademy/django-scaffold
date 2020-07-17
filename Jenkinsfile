@@ -169,9 +169,9 @@ pipeline {
                 }
             }
             steps {
-                script {
-                    //OpenShift.buildAndTag(this, config, env.VERSION, commitId, baseImage, clusterName, environment)
-                }
+                /*script {
+                    OpenShift.buildAndTag(this, config, env.VERSION, commitId, baseImage, clusterName, environment)
+                }*/
                 sh 'printenv'
 
                 echo '### Get Binary from Nexus and shove it in a box ###'
