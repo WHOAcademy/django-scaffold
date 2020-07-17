@@ -80,6 +80,7 @@ pipeline {
                     }
                     steps {
                         script {
+                            Openshift.sayHello(this)
                             env.APP_ENV = "dev"
                             // Sandbox registry deets
                             env.IMAGE_REPOSITORY = 'image-registry.openshift-image-registry.svc:5000'
