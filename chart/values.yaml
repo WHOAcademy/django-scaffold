@@ -4,6 +4,8 @@ replicas: 1
 build:
   build_tag: latest
   base_image: python-38:latest
+  enabled: false
+  source_docker_file_path: Dockerfile
 image_repository: image-registry.openshift-image-registry.svc:5000
 image_name: django-scaffold
 image_namespace:
@@ -14,7 +16,7 @@ route: true
 
 # Database
 database:
-  service_host: django-scaffold-db
+  service_host: django-scaffold-db-postgresql
   service_port: 5432
   name: neverendingblog
   user: bastian
