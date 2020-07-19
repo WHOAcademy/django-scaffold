@@ -184,7 +184,6 @@ pipeline {
                     BUILD_ARGS=" --build-arg git_commit=${GIT_COMMIT} --build-arg git_url=${GIT_URL}  --build-arg build_url=${RUN_DISPLAY_URL} --build-arg build_tag=${BUILD_TAG}"
                     echo ${BUILD_ARGS}
 
-                    oc project ${PROJECT}
                     # oc get bc ${APP_NAME} || rc=$?
                     # dirty hack so i don't have to oc patch the bc for the new version when pushing to quay ...
                     oc delete bc ${APP_NAME} || rc=$?
