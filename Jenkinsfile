@@ -1,8 +1,3 @@
-@Library('openshift-jenkins-shared-libraries')
-
-import platform.*
-import util.*
-
 pipeline {
     agent {
         label "master"
@@ -125,8 +120,7 @@ pipeline {
                     env.VERSION = sh(returnStdout: true, script: "grep -oP \"(?<=version=')[^']*\" setup.py").trim()
                     env.VERSIONED_APP_NAME = "${NAME}-${VERSION}"
                     env.PACKAGE = "${VERSIONED_APP_NAME}.tar.gz"
-                    env.DIST_PACKAGE = "dist.tar.gz"
-                    env.SECRET_KEY = 'xxub4w!i2$*bb#s5r%od4qepb7i-2@pq+yvna-2sj5d!tc8#8f' //TODO: get it from secret
+                    env.SECRET_KEY = 'xxub4w!i2$*bb#s5r%od4qepb7i-2@pq+yvna-2sj5d!tc8#8f' //TODO: get it from secret vault
                 }
                 sh 'printenv'
 
@@ -144,6 +138,7 @@ pipeline {
                     curl -v -f -u ${NEXUS_CREDS} --upload-file dist/${PACKAGE} http://${SONATYPE_NEXUS_SERVICE_SERVICE_HOST}:${SONATYPE_NEXUS_SERVICE_SERVICE_PORT}/repository/${NEXUS_REPO_NAME}/${APP_NAME}/${PACKAGE}
                 '''
             }
+            //TODO: use python Coverage
             // Post can be used both on individual stages and for the entire build.
             /*post {
                 always {
@@ -172,9 +167,6 @@ pipeline {
                 }
             }
             steps {
-                /*script {
-                    OpenShift.buildAndTag(this, config, env.VERSION, commitId, baseImage, clusterName, environment)
-                }*/
                 sh 'printenv'
 
                 echo '### Get Binary from Nexus and shove it in a box ###'
@@ -202,21 +194,184 @@ pipeline {
                 '''
             }
       }
-/*
-        stage("Helm Package App (master)") {
 
+  stage("Helm Package App (master)") {
+            agent {
+                node {
+                    label "jenkins-slave-helm"
+                }
+            }
+            steps {
+                sh 'printenv'
+                sh '''
+                    helm lint chart
+                '''
+                sh '''
+                    # might be overkill...
+                    yq w -i chart/Chart.yaml 'appVersion' ${VERSION}
+                    yq w -i chart/Chart.yaml 'version' ${VERSION}
+                    yq w -i chart/Chart.yaml 'name' ${APP_NAME}
+
+                    # probs point to the image inside ocp cluster or perhaps an external repo?
+                    yq w -i chart/values.yaml 'image_repository' ${IMAGE_REPOSITORY}
+                    yq w -i chart/values.yaml 'image_name' ${APP_NAME}
+                    yq w -i chart/values.yaml 'image_namespace' ${TARGET_NAMESPACE}
+
+                    # latest built image
+                    yq w -i chart/values.yaml 'app_tag' ${VERSION}
+                '''
+                sh '''
+                    # package and release helm chart?
+                    helm package chart/ --app-version ${VERSION} --version ${VERSION}
+                    curl -v -f -u ${NEXUS_CREDS} http://${SONATYPE_NEXUS_SERVICE_SERVICE_HOST}:${SONATYPE_NEXUS_SERVICE_SERVICE_PORT}/repository/${NEXUS_REPO_HELM}/ --upload-file ${APP_NAME}-${VERSION}.tgz
+                '''
+            }
         }
 
         stage("Deploy App") {
+            failFast true
+            parallel {
+                stage("sandbox - helm3 publish and install"){
+                    options {
+                        skipDefaultCheckout(true)
+                    }
+                    agent {
+                        node {
+                            label "jenkins-slave-helm"
+                        }
+                    }
+                    when {
+                        expression { GIT_BRANCH.startsWith("dev") || GIT_BRANCH.startsWith("feature") || GIT_BRANCH.startsWith("fix") }
+                    }
+                    steps {
+                        // TODO - if SANDBOX, create release in rando ns
+                        sh '''
+                            helm upgrade --install ${APP_NAME} \
+                                --namespace=${TARGET_NAMESPACE} \
+                                http://${SONATYPE_NEXUS_SERVICE_SERVICE_HOST}:${SONATYPE_NEXUS_SERVICE_SERVICE_PORT}/repository/${NEXUS_REPO_HELM}/${APP_NAME}-${VERSION}.tgz
+                        '''
+                    }
+                }
+                stage("test env - ArgoCD sync") {
+                    options {
+                        skipDefaultCheckout(true)
+                    }
+                    agent {
+                        node {
+                            label "jenkins-slave-argocd"
+                        }
+                    }
+                    when {
+                        expression { GIT_BRANCH ==~ /(.*master)/ }
+                    }
+                    steps {
+                        echo '### Commit new image tag to git ###'
+                        sh  '''
+                            # TODO ARGOCD create app?
+                            # TODO - fix all this after chat with @eformat
+                            git clone https://${ARGOCD_CONFIG_REPO} config-repo
+                            cd config-repo
+                            git checkout ${ARGOCD_CONFIG_REPO_BRANCH}
+                            # TODO - @eformat we probs need to think about the app of apps approach or better logic here
+                            # as using array[0] is 🧻
+                            yq w -i ${ARGOCD_CONFIG_REPO_PATH} "applications.name==test-${NAME}.source_ref" ${VERSION}
+                            git config --global user.email "jenkins@rht-labs.bot.com"
+                            git config --global user.name "Jenkins"
+                            git config --global push.default simple
+                            git add ${ARGOCD_CONFIG_REPO_PATH}
+                            git commit -m "🚀 AUTOMATED COMMIT - Deployment new app version ${VERSION} 🚀" || rc=$?
+                            git remote set-url origin  https://${GIT_CREDS_USR}:${GIT_CREDS_PSW}@${ARGOCD_CONFIG_REPO}
+                            git push -u origin ${ARGOCD_CONFIG_REPO_BRANCH}
+                        '''
 
+                        echo '### Ask ArgoCD to Sync the changes and roll it out ###'
+                        sh '''
+                            # 1. Check if app of apps exists, if not create?
+                            # 1.1 Check sync not currently in progress . if so, kill it
+                            # 2. sync argocd to change pushed in previous step
+                            ARGOCD_INFO="--auth-token ${ARGOCD_CREDS_PSW} --server ${ARGOCD_SERVER_SERVICE_HOST}:${ARGOCD_SERVER_SERVICE_PORT_HTTP} --insecure"
+                            argocd app sync catz ${ARGOCD_INFO}
+                            argocd app wait catz ${ARGOCD_INFO}
+                            # todo sync child app
+                            # argocd app sync test-${NAME} ${ARGOCD_INFO}
+                            # argocd app wait test-${NAME} ${ARGOCD_INFO}
+                        '''
+                    }
+                }
+
+
+            }
         }
 
         stage("End to End Test") {
-
+            agent {
+                node {
+                    label "master"
+                }
+            }
+            when {
+                expression { GIT_BRANCH ==~ /(.*master)/ }
+            }
+            steps {
+                sh  '''
+                    echo "TODO - Run tests"
+                '''
+            }
         }
 
         stage("Promote app to Staging") {
+            agent {
+                node {
+                    label "jenkins-slave-argocd"
+                }
+            }
+            when {
+                expression { GIT_BRANCH ==~ /(.*master)/ }
+            }
+            steps {
+                sh  '''
+                    # TODO ARGOCD create app?
+                    # TODO - fix all this after chat with @eformat
+                    git clone https://${ARGOCD_CONFIG_REPO} config-repo
+                    cd config-repo
+                    git checkout ${ARGOCD_CONFIG_REPO_BRANCH}
+                    # TODO - @eformat we probs need to think about the app of apps approach or better logic here
+                    # as using array[0] is 🧻
+                    yq w -i ${ARGOCD_CONFIG_REPO_PATH} "applications.name==${APP_NAME}.source_ref" ${VERSION}
+                    git config --global user.email "jenkins@rht-labs.bot.com"
+                    git config --global user.name "Jenkins"
+                    git config --global push.default simple
+                    git add ${ARGOCD_CONFIG_REPO_PATH}
+                    # grabbing the error code incase there is nothing to commit and allow jenkins proceed
+                    git commit -m "🚀 AUTOMATED COMMIT - Deployment new app version ${VERSION} 🚀" || rc=$?
+                    git remote set-url origin  https://${GIT_CREDS_USR}:${GIT_CREDS_PSW}@${ARGOCD_CONFIG_REPO}
+                    git push -u origin ${ARGOCD_CONFIG_REPO_BRANCH}
+                '''
 
-        }*/
+                echo '### Ask ArgoCD to Sync the changes and roll it out ###'
+                sh '''
+                    # 1. Check if app of apps exists, if not create?
+                    # 1.1 Check sync not currently in progress . if so, kill it
+                    # 2. sync argocd to change pushed in previous step
+                    ARGOCD_INFO="--auth-token ${ARGOCD_CREDS_PSW} --server ${ARGOCD_SERVER_SERVICE_HOST}:${ARGOCD_SERVER_SERVICE_PORT_HTTP} --insecure"
+                    argocd app sync catz ${ARGOCD_INFO}
+                    argocd app wait catz ${ARGOCD_INFO}
+                    # todo sync child app
+                    # argocd app sync ${NAME} ${ARGOCD_INFO}
+                    # argocd app wait ${NAME} ${ARGOCD_INFO}
+                '''
+
+                sh  '''
+                    echo "merge versions back to the original GIT repo as they should be persisted?"
+                    git checkout ${GIT_BRANCH}
+                    yq w -i chart/Chart.yaml 'appVersion' ${VERSION}
+                    yq w -i chart/Chart.yaml 'version' ${VERSION}
+                    git add chart/Chart.yaml
+                    git commit -m "🚀 AUTOMATED COMMIT - Deployment of new app version ${VERSION} 🚀" || rc=$?
+                    git remote set-url origin https://${GIT_CREDS_USR}:${GIT_CREDS_PSW}@github.com/springdo/pet-battle.git
+                    git push
+                '''
+            }
+        }
     }
 }
