@@ -1,4 +1,4 @@
-FROM registry.access.redhat.com/rhscl/nginx-112-rhel7
+FROM image-registry.openshift-image-registry.svc:5000/openshift/python-38:latest
 
 ENV PYTHONUNBUFFERED 1
 
@@ -13,4 +13,3 @@ LABEL labs.build.url="${build_url}" \
 RUN pip install -r requirements.txt
 
 COPY dist $HOME
-CMD ["nginx", "-g", "daemon off;"]
