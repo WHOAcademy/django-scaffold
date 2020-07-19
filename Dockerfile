@@ -11,3 +11,5 @@ LABEL labs.build.url="${build_url}" \
       labs.git.url="${git_url}"
 
 RUN pip install -r requirements.txt
+
+COPY . $HOME
