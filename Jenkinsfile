@@ -128,7 +128,7 @@ pipeline {
                 sh 'pip install -r requirements.txt'
 
                 echo '### Running tests ###'
-                sh 'python manage.py test blog.tests --testrunner="django_site.testrunners.UnitTestRunner"'
+                sh 'python manage.py test django_app.tests --testrunner="django_site.testrunners.UnitTestRunner"'
 
                 echo '### Packaging App for Nexus ###'
                 sh '''
