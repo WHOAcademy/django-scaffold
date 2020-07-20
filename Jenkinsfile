@@ -27,7 +27,7 @@ pipeline {
         NEXUS_REPO_NAME="labs-static"
         NEXUS_REPO_HELM = "helm-charts"
     }
-
+ 
     // The options directive is for configuration that applies to the whole job.
     options {
         buildDiscarder(logRotator(numToKeepStr: '50', artifactNumToKeepStr: '1'))
@@ -128,7 +128,7 @@ pipeline {
                 sh 'pip install -r requirements.txt'
 
                 echo '### Running tests ###'
-                sh 'python manage.py test blog.tests --testrunner="django_site.testrunners.UnitTestRunner"'
+                sh 'python manage.py test django_site.tests'
 
                 echo '### Packaging App for Nexus ###'
                 sh '''
