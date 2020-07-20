@@ -85,27 +85,6 @@ pipeline {
                         }
                     }
                 }
-                stage("Pull Request Build") {
-                    options {
-                        skipDefaultCheckout(true)
-                    }
-                    agent {
-                        node {
-                            label "master"
-                        }
-                    }
-                    when {
-                        expression { GIT_BRANCH.startsWith("PR-") }
-                    }
-                    steps {
-                        script {
-                            env.APP_ENV = "dev"
-                            env.IMAGE_REPOSITORY = 'image-registry.openshift-image-registry.svc:5000'
-                            env.APP_NAME = "${GIT_BRANCH}-${NAME}".replace("/", "-").toLowerCase()
-                            env.TARGET_NAMESPACE = "${PROJECT}-" + env.APP_ENV
-                        }
-                    }
-                }
             }
         }
 
