@@ -128,7 +128,7 @@ pipeline {
                 sh 'pip install -r requirements.txt'
 
                 echo '### Running tests ###'
-                sh 'python manage.py test django_app.tests'
+                sh 'python manage.py test   --with-coverage --cover-erase --cover-package=django_app --with-xunit --xunit-file=xunittest.xml --cover-branches --cover-html'
 
                 echo '### Packaging App for Nexus ###'
                 sh '''
@@ -138,23 +138,22 @@ pipeline {
                     curl -v -f -u ${NEXUS_CREDS} --upload-file dist/${PACKAGE} http://${SONATYPE_NEXUS_SERVICE_SERVICE_HOST}:${SONATYPE_NEXUS_SERVICE_SERVICE_PORT}/repository/${NEXUS_REPO_NAME}/${APP_NAME}/${PACKAGE}
                 '''
             }
-            //TODO: use python Coverage
             // Post can be used both on individual stages and for the entire build.
-            /*post {
+            post {
                 always {
                     // archiveArtifacts "**"
-                    junit 'reports/unit/junit.xml'
+                    junit 'xunittest.xml'
                     // publish html
                     publishHTML target: [
                         allowMissing: false,
                         alwaysLinkToLastBuild: false,
                         keepAll: true,
-                        reportDir: 'reports/coverage/lcov-report',
+                        reportDir: 'cover',
                         reportFiles: 'index.html',
-                        reportName: 'FE Code Coverage'
+                        reportName: 'Django Code Coverage'
                     ]
                 }
-            }*/
+            }
         }
 
       stage("Bake (OpenShift Build)") {

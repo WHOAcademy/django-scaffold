@@ -121,4 +121,5 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
-TEST_RUNNER = 'django_site.testrunners.UnitTestRunner'
+TEST_RUNNER = 'django_site.testrunners.NoseUnitTestSuiteRunner'
+
