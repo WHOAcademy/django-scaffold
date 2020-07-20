@@ -58,7 +58,7 @@ pipeline {
                             env.IMAGE_REPOSITORY = "quay.io"
                             // app name for master is just learning-experience-platform or something
                             env.APP_NAME = "${NAME}".replace("/", "-").toLowerCase()
-                            env.TARGET_NAMESPACE = "${PROJECT}-" + env.APP_ENV
+                            env.TARGET_NAMESPACE = "who-lxp"
                         }
                     }
                 }
