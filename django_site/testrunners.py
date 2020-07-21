@@ -3,6 +3,10 @@ from django.test.runner import DiscoverRunner
 from unittest.suite import TestSuite
 from django_nose import NoseTestSuiteRunner
 
+'''
+https://medium.com/@xavier.dubuc/django-unit-testing-the-right-way-ba465cf3f3c9
+https://medium.com/@Zaccc123/django-tests-with-nose-and-coverage-dff5d3633b4b
+'''
 
 class UnitTestRunner(DiscoverRunner):
     def setup_databases(self, **kwargs):
