@@ -137,4 +137,12 @@ dmypy.json
 cover/
 xunittest.xml
 
+# Chart dependencies
+**/charts/*.tgz
+**/requirements.lock
+**/Chart.lock
+
+.history
+secrets.yaml
+
 
